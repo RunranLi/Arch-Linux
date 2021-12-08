@@ -1,0 +1,99 @@
+Search Arch Linux on the browser
+Click Download
+Download mirror
+Open Vmware Workstation
+Create a new virtual machine
+Typical
+Install the operating system later
+Choose Linux here (other Linux 5.x and later kernels 64-bit)
+Select the location of the virtual machine
+The size of the disk is determined according to the actual situation
+Click Customize Hardware
+Memory, the number of processor cores is set according to the actual situation
+Choose to use ISO image in "New CD/DVD (IDE)", select the image you just downloaded
+Click "Close" after selecting the mirror
+Then click Finish
+Edit virtual machine settings
+Options→Advanced→UEFI
+Turn on the virtual machine
+Choose the first one
+Verify boot mode # ls /sys/firmware/efi/efivars
+Check the network connection (press Ctrl+C to interrupt the currently running command) # ping www.baidu.com
+Update system time # timedatectl set-ntp true
+Create hard disk partition (using cfdisk to demonstrate here) # cfdisk
+Choose gpt
+Use the "Type" below to select the partition type: EFI systerm, linux swap, linux root x86-64
+Then select "Write", enter yes, and press Enter
+And then quit
+Format partition
+View partition # lsblk
+The root partition is formatted as ext4
+# mkfs.ext4 /dev/root_partition (root partition)
+efi partition formatted as fat32
+# mkfs.fat -F32 /dev/efi_partition (efi partition)
+Initialize the swap partition
+# mkswap /dev/swap_partition (swap space partition)
+Mount partition
+Mount the root disk volume to /mnt
+# mount /dev/root_partition (root partition) /mnt
+Use mkdir to create other remaining mount points
+# mkdir /mnt/efi
+Mount the efi disk volume to /mnt/efi
+# mount /dev/efi_partition (efi partition) /mnt/efi
+# swapon /dev/swap_partition (swap space partition)
+Install
+Change software source
+curl -L -o /etc/pacman.d/mirrorlist "https://www.archlinux.org/mirrorlist/?country=CN"
+Edit /etc/pacman.d/mirrorlist, uncomment the link
+Install the necessary packages\
+# pacstrap /mnt base linux linux-firmware vim base-devel
+Waiting to download
+Configure the system
+Fstab
+Use the following command to generate fstab file
+# genfstab -U /mnt >> /mnt/etc/fstab
+Check Fstab
+# cat /mnt/etc/fstab
+Change root to the newly installed system
+# arch-chroot /mnt
+Set time zone
+# ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime # hwclock --systohc
+
+Localization
+Edit /etc/locale.gen, and then cancel the comment before en_US.UTF-8 UTF-8 and zh_CN.UTF-8 UTF-8 (#)
+Then execute locale-gen to generate locale information
+# locale-gen
+Network Configuration
+Create hostname file
+Edit /etc/hostname
+myarch (host name)
+Add the corresponding information to hosts Edit /etc/hosts
+127.0.0.1 localhost
+::1 localhost
+127.0.1.1 myarch.localdomain myarch# Host name. Local domain name Host name
+Root password
+# passwd
+Installation guide
+Download the required files for grub
+# pacman -S dosfstools grub efibootmgr
+Install grub
+grub-install --recheck /dev/sda --efi-directory=/efi
+Finally, you need to generate a grub configuration file
+grub-mkconfig -o /boot/grub/grub.cfg
+Create new user
+useradd -m -G wheel -s /bin/bash uesrname
+Set user password
+passwd username
+Add sudo permissions to the user
+Edit /etc/sudoers
+Uncomment %wheel ALL=(ALL) ALL
+Install dhcp
+pacman -S dhcp dhcpcd
+Exit chroot and restart
+enter
+exit
+Unmount partition
+umount -R /mnt/efi umount -R /mnt
+Reboot
+Finally install the desktop
+# pacman -S gnome gnome-extra
